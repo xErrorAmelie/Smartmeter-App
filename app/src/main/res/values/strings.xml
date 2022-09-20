@@ -12,7 +12,7 @@
     <string name="invalid_username">Not a valid username</string>
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
-    <string name="stromverbrauch">Dein Stromverbrauch</string>
+    <string name="stromverbrauch">Dein Stromverbrauch: </string>
     <string name="mqtt_settings">MQTT Settings</string>
     <string name="foo_bar">foo/bar</string>
     <string name="subscribe">Subscribe:</string>
