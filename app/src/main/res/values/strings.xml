@@ -21,4 +21,7 @@
     <string name="miau">Miau!</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
+    <string name="broker_port">broker port</string>
+    <string name="title_broker_port">Broker Port</string>
+    <string name="topic">topic</string>
 </resources>
