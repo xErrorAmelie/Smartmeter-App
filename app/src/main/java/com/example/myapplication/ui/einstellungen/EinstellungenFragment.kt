@@ -1,14 +1,10 @@
 package com.example.myapplication.ui.einstellungen
 
-import android.R
 import android.content.Context
-import android.graphics.Typeface
 import android.os.Bundle
-import android.text.method.PasswordTransformationMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.myapplication.databinding.FragmentEinstellungenBinding

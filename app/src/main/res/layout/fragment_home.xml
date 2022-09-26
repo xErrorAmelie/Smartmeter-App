@@ -29,11 +29,9 @@
         android:id="@+id/textView"
         android:layout_width="326dp"
         android:layout_height="53dp"
-        android:drawableTint="#F4F4F4"
         android:text="@string/stromverbrauch"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        android:textColor="#FDFDFD"
         android:textColorHighlight="#FD0707"
         android:textColorHint="#FFFFFF"
 
@@ -44,5 +42,6 @@
         app:layout_constraintHorizontal_bias="0.494"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.275" />
+        app:layout_constraintVertical_bias="0.275"
+        app:drawableTint="#F4F4F4" />
 </androidx.constraintlayout.widget.ConstraintLayout>
