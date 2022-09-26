@@ -50,5 +50,8 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'com.github.hannesa2:paho.mqtt.android:3.5.0'
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0"
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 }
 
