@@ -2,24 +2,18 @@ package com.example.myapplication.ui.dashboard
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import com.example.myapplication.R
 import com.example.myapplication.databinding.FragmentDashboardBinding
-import com.github.mikephil.charting.components.AxisBase
-import com.github.mikephil.charting.data.*
-import com.github.mikephil.charting.formatter.ValueFormatter
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import okhttp3.*
-import java.io.IOException
-import java.util.*
+import com.example.myapplication.ui.dashboard.tabs.DashboardTab30Min
+import com.example.myapplication.ui.dashboard.tabs.DashboardTabDay
+import com.example.myapplication.ui.dashboard.tabs.DashboardTabMonth
+import com.example.myapplication.ui.dashboard.tabs.DashboardTabWeek
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 
 class DashboardFragment : Fragment() {
     private lateinit var mContext:Context
@@ -33,116 +27,28 @@ class DashboardFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val dashboardViewModel =
-            ViewModelProvider(this).get(DashboardViewModel::class.java)
-
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.dashboard_tab_fragment, DashboardTab30Min.newInstance())
+            .commit()
         val root: View = binding.root
-
-        val textView: TextView = binding.textDashboard
-        dashboardViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
-        }
-
-        val chart = binding.chartTest
-        val chartHours = binding.barChartTest
-        val client = OkHttpClient()
-        val time = System.currentTimeMillis()
-        Log.i("OkHttp", "http://10.0.0.26:8080/api/v1/all/?time_start=${time - 30 * 60 * 1000}&time_end=$time")
-        val request = Request.Builder()
-            .url("http://10.0.0.26:8080/api/v1/all/?time_start=${time - 30 * 60 * 1000}&time_end=$time")
-            .build()
-        client.newCall(request).enqueue(object:Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("OkHttp", "OkHttp is not OK" + e.message)
-            }
-            override fun onResponse(call: Call, response: Response) {
-                response.body?.let {
-                    val resString = it.string()
-                    Log.i("OkHttp", resString)
-                    val resJson = Json.parseToJsonElement(resString)
-                    val data = resJson.jsonObject["data"]?.jsonArray
-                    val entries:ArrayList<Entry> = ArrayList()
-                    val diff = (data?.get(0)?.jsonObject?.get("time").toString().dropLast(8) + "00000000").toLong()
-                    data?.stream()?.forEach { entry ->
-                        entries.add(Entry((entry.jsonObject["time"].toString().toLong()-diff).toFloat(), entry.jsonObject["Momentanleistung"].toString().toFloat()))
-                    }
-
-                    val themeColor = TypedValue()
-                    val primaryColor = TypedValue()
-                    val dataSet = LineDataSet(entries, "Momentanleistung")
-                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
-                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, primaryColor, true)
-                    dataSet.color = primaryColor.data
-                    dataSet.valueTextColor = themeColor.data
-                    dataSet.circleRadius = 1F
-                    chart.xAxis.textColor = themeColor.data
-                    chart.legend.textColor = themeColor.data
-                    chart.axisLeft.textColor = themeColor.data
-                    chart.xAxis.valueFormatter = object:ValueFormatter() {
-                        override fun getAxisLabel(value: Float, axis: AxisBase?): String {
-                            return Date(value.toLong() + diff).toString().substring(10,19)
-                        }
-                    }
-                    chart.axisRight.isEnabled = false
-                    chart.description.isEnabled = false
-                    chart.data = LineData(dataSet)
-                    chart.invalidate()
-                }
-
+        val tabLayout = binding.tablayoutDashboard
+        binding.tablayoutDashboard.addOnTabSelectedListener(object:OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                val transFragment =
+                    if(tabLayout.getTabAt(0)?.isSelected == true) DashboardTab30Min.newInstance()
+                    else if(tabLayout.getTabAt(1)?.isSelected == true) DashboardTabDay.newInstance()
+                    else if(tabLayout.getTabAt(2)?.isSelected == true) DashboardTabWeek.newInstance()
+                    else DashboardTabMonth.newInstance()
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.dashboard_tab_fragment, transFragment)
+                    .commit()
             }
 
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
-        val requestHours = Request.Builder()
-            .url("http://10.0.0.26:8080/api/v1/hourly/?time_start=${time - 25 * 60 * 60 * 1000}&time_end=$time")
-            .build()
-        client.newCall(requestHours).enqueue(object:Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("OkHttp", "OkHttp is not OK" + e.message)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.body?.let {
-                    val resString = it.string()
-                    Log.i("OkHttp", resString)
-                    val resJson = Json.parseToJsonElement(resString)
-                    val data = resJson.jsonObject["data"]?.jsonArray
-                    val entries:ArrayList<BarEntry> = ArrayList()
-                    val diff = (data?.get(0)?.jsonObject?.get("timeStart").toString().dropLast(8)).toLong()
-                    data?.stream()?.forEach { entry ->
-                        Log.d("OkHttp", entry.jsonObject["timeStart"].toString() + " " + ((entry.jsonObject["timeStart"].toString().toLong()-diff)).toString())
-                        entries.add(BarEntry((entry.jsonObject["timeStart"].toString().toLong()-diff).toFloat(), entry.jsonObject["Momentanleistung"].toString().toFloat()))
-                    }
-
-                    val themeColor = TypedValue()
-                    val primaryColor = TypedValue()
-                    TypedValue()
-                    val dataSet = BarDataSet(entries, "Momentanleistung")
-                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
-                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, primaryColor, true)
-                    dataSet.color = primaryColor.data
-                    dataSet.valueTextColor = themeColor.data
-                    dataSet.barBorderColor = primaryColor.data
-                    dataSet.barBorderWidth = 10F
-                    chartHours.xAxis.textColor = themeColor.data
-                    chartHours.setFitBars(true)
-                    chartHours.legend.textColor = themeColor.data
-                    chartHours.axisLeft.textColor = themeColor.data
-                    chartHours.xAxis.valueFormatter = object:ValueFormatter() {
-                        override fun getAxisLabel(value: Float, axis: AxisBase?): String {
-                            return Date(value.toLong() + diff).toString().substring(10,16)
-                        }
-                    }
-                    chartHours.axisRight.isEnabled = false
-                    chartHours.description.isEnabled = false
-                    chartHours.data = BarData(dataSet)
-                    chartHours.invalidate()
-                }
-
-            }
-
-        })
-
         return root
     }
 

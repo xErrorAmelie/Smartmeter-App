@@ -26,4 +26,8 @@
     <string name="topic">topic</string>
     <string name="title_strompreis">Strompreis</string>
     <string name="strom_preis">strompreis</string>
+    <string name="tab_30min">30min</string>
+    <string name="tab_day">Tag</string>
+    <string name="tab_week">Woche</string>
+    <string name="tab_month">Monat</string>
 </resources>
