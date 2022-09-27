@@ -33,7 +33,7 @@ class EinstellungenFragment : Fragment() {
             Context.MODE_PRIVATE
         )
         binding.editTextMQTTBroker.setText(sharedPreferences.getString("broker", "empty"))
-        binding.editTextMQTTPort.setText(sharedPreferences.getString("port", "1883"))
+        binding.editTextMQTTPort.setText(sharedPreferences.getString("port", "empty"))
         binding.editTextMQTTTopic.setText(sharedPreferences.getString("topic", "empty"))
         binding.editTextMQTTUsername.setText(sharedPreferences.getString("username", "empty"))
         binding.editTextMQTTPassword.setText(sharedPreferences.getString("password", "empty"))
@@ -51,7 +51,7 @@ class EinstellungenFragment : Fragment() {
             editor.putString("username", username)
             editor.putString("password", password)
             editor.apply()
-            Toast.makeText(requireContext(), "uwu!", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "Einstellungen übernommen!", Toast.LENGTH_LONG).show()
         }
         return root
     }

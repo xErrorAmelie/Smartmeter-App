@@ -18,10 +18,12 @@
     <string name="subscribe">Subscribe:</string>
     <string name="broker_adresse">Broker Adresse:</string>
     <string name="_0_0_0_0">0.0.0.0</string>
-    <string name="miau">Miau!</string>
+    <string name="apply">Übernehmen</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="broker_port">broker port</string>
     <string name="title_broker_port">Broker Port</string>
     <string name="topic">topic</string>
+    <string name="title_strompreis">Strompreis</string>
+    <string name="strom_preis">strompreis</string>
 </resources>
