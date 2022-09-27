@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">Smartmeter App</string>
     <string name="title_home">Aktuell</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Einstellungen</string>
@@ -12,20 +12,21 @@
     <string name="invalid_username">Not a valid username</string>
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
-    <string name="stromverbrauch">Dein Stromverbrauch: </string>
-    <string name="mqtt_settings">MQTT Settings</string>
+    <string name="stromverbrauch">Dein aktueller Stromverbrauch: </string>
+    <string name="mqtt_settings">MQTT Live Verbindung</string>
     <string name="foo_bar">foo/bar</string>
     <string name="subscribe">Subscribe:</string>
     <string name="broker_adresse">Broker Adresse:</string>
-    <string name="_0_0_0_0">0.0.0.0</string>
     <string name="apply">Übernehmen</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="broker_port">broker port</string>
     <string name="title_broker_port">Broker Port</string>
     <string name="topic">topic</string>
-    <string name="title_strompreis">Strompreis</string>
-    <string name="strom_preis">strompreis</string>
+    <string name="title_strompreis">Dein Strompreis</string>
+    <string name="strom_preis">strompreis (euro/kWh)</string>
+    <string name="title_topic">Topic</string>
+    <string name="title_passwort">Passwort</string>
     <string name="tab_30min">30min</string>
     <string name="tab_day">Tag</string>
     <string name="tab_week">Woche</string>
