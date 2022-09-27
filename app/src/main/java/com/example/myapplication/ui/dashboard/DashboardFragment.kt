@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.dashboard
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.util.TypedValue
@@ -9,21 +10,19 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.example.myapplication.R
-import kotlinx.serialization.json.Json
 import com.example.myapplication.databinding.FragmentDashboardBinding
 import com.github.mikephil.charting.components.AxisBase
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import okhttp3.*
 import java.io.IOException
 import java.util.*
-import kotlin.collections.ArrayList
 
 class DashboardFragment : Fragment() {
-
+    private lateinit var mContext:Context
     private var _binding: FragmentDashboardBinding? = null
 
     // This property is only valid between onCreateView and
@@ -44,6 +43,7 @@ class DashboardFragment : Fragment() {
         dashboardViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
         }
+
         val chart = binding.chartTest
         val chartHours = binding.barChartTest
         val client = OkHttpClient()
@@ -56,7 +56,6 @@ class DashboardFragment : Fragment() {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("OkHttp", "OkHttp is not OK" + e.message)
             }
-
             override fun onResponse(call: Call, response: Response) {
                 response.body?.let {
                     val resString = it.string()
@@ -70,9 +69,11 @@ class DashboardFragment : Fragment() {
                     }
 
                     val themeColor = TypedValue()
+                    val primaryColor = TypedValue()
                     val dataSet = LineDataSet(entries, "Momentanleistung")
-                    requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
-                    dataSet.color = resources.getColor(R.color.purple_500, requireContext().theme)
+                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
+                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, primaryColor, true)
+                    dataSet.color = primaryColor.data
                     dataSet.valueTextColor = themeColor.data
                     dataSet.circleRadius = 1F
                     chart.xAxis.textColor = themeColor.data
@@ -80,7 +81,7 @@ class DashboardFragment : Fragment() {
                     chart.axisLeft.textColor = themeColor.data
                     chart.xAxis.valueFormatter = object:ValueFormatter() {
                         override fun getAxisLabel(value: Float, axis: AxisBase?): String {
-                            return Date(value.toLong() + diff).toString().substring(10,19);
+                            return Date(value.toLong() + diff).toString().substring(10,19)
                         }
                     }
                     chart.axisRight.isEnabled = false
@@ -114,11 +115,14 @@ class DashboardFragment : Fragment() {
                     }
 
                     val themeColor = TypedValue()
+                    val primaryColor = TypedValue()
+                    TypedValue()
                     val dataSet = BarDataSet(entries, "Momentanleistung")
-                    requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
-                    dataSet.color = resources.getColor(R.color.purple_500, requireContext().theme)
+                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
+                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, primaryColor, true)
+                    dataSet.color = primaryColor.data
                     dataSet.valueTextColor = themeColor.data
-                    dataSet.barBorderColor = resources.getColor(R.color.purple_500, requireContext().theme)
+                    dataSet.barBorderColor = primaryColor.data
                     dataSet.barBorderWidth = 10F
                     chartHours.xAxis.textColor = themeColor.data
                     chartHours.setFitBars(true)
@@ -126,7 +130,7 @@ class DashboardFragment : Fragment() {
                     chartHours.axisLeft.textColor = themeColor.data
                     chartHours.xAxis.valueFormatter = object:ValueFormatter() {
                         override fun getAxisLabel(value: Float, axis: AxisBase?): String {
-                            return Date(value.toLong() + diff).toString().substring(10,16);
+                            return Date(value.toLong() + diff).toString().substring(10,16)
                         }
                     }
                     chartHours.axisRight.isEnabled = false
@@ -140,6 +144,11 @@ class DashboardFragment : Fragment() {
         })
 
         return root
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        mContext = context
     }
 
     override fun onDestroyView() {
