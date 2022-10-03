@@ -7,7 +7,14 @@ import androidx.lifecycle.ViewModel
 class DashboardViewModel : ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
-        value = "This is dashboard Fragment"
+        value = "No Data"
     }
     val text: LiveData<String> = _text
+
+    fun meow(currentpower: String){
+        _text.value = "$currentpower Watt"
+    }
+    fun meowPost(onedaypower: String){
+        _text.postValue("$onedaypower Euro")
+    }
 }

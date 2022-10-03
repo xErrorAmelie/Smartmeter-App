@@ -45,11 +45,15 @@ class EinstellungenFragment : Fragment() {
             val topic = binding.editTextMQTTTopic.text.toString()
             val username = binding.editTextMQTTUsername.text.toString()
             val password = binding.editTextMQTTPassword.text.toString()
+            val strompreis = binding.editTextStrom.text.toString().toFloatOrNull()
             editor.putString("broker", broker)
             editor.putString("port", port)
             editor.putString("topic", topic)
             editor.putString("username", username)
             editor.putString("password", password)
+            if (strompreis != null) {
+                editor.putFloat("strompreis", strompreis)
+            }
             editor.apply()
             Toast.makeText(requireContext(), "Einstellungen übernommen!", Toast.LENGTH_LONG).show()
         }

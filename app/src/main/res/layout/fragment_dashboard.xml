@@ -6,12 +6,38 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     tools:context=".ui.dashboard.DashboardFragment">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="326dp"
+        android:layout_height="47dp"
+        android:autoSizeTextType="uniform"
+        android:text="@string/stromverbrauch"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textColorHighlight="#FD0707"
+        android:textColorHint="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+    <TextView
+        android:id="@+id/text_home"
+        android:layout_width="367dp"
+        android:layout_height="75dp"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textSize="38sp"
+        android:textColor="?attr/colorOnBackground"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textView"
+        app:layout_constraintVertical_bias="0.365" />
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tablayout_dashboard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent">
-    <com.google.android.material.tabs.TabItem
+        app:layout_constraintTop_toBottomOf="@id/text_home">
+        <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/tab_30min"/>
@@ -28,11 +54,18 @@
             android:layout_height="wrap_content"
             android:text="@string/tab_month"/>
     </com.google.android.material.tabs.TabLayout>
+
     <FrameLayout
         android:id="@+id/dashboard_tab_fragment"
         android:layout_width="match_parent"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tablayout_dashboard"
-        android:layout_height="0dp"/>
-
+        app:layout_constraintVertical_bias="1.0"
+        tools:layout_editor_absoluteX="-65dp">
+    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+

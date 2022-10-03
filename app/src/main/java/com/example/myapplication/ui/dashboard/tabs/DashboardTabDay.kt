@@ -7,13 +7,17 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.databinding.FragmentDashboardTabDayBinding
+import com.example.myapplication.ui.dashboard.DashboardViewModel
 import com.github.mikephil.charting.components.AxisBase
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.google.android.material.R
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -42,6 +46,11 @@ class DashboardTabDay : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDashboardTabDayBinding.inflate(inflater, container, false)
+        val dashboardViewModel = ViewModelProvider(this)[DashboardViewModel::class.java]
+        val textView: TextView = binding.textViewStrompreis
+        dashboardViewModel.text.observe(viewLifecycleOwner) {
+            textView.text = it.toString()
+        }
         val root: View = binding.root
         val chartHours = binding.barChartTest
         val client = OkHttpClient()
@@ -62,17 +71,24 @@ class DashboardTabDay : Fragment() {
                     val data = resJson.jsonObject["data"]?.jsonArray
                     val entries: ArrayList<BarEntry> = ArrayList()
                     val diff = (data?.get(0)?.jsonObject?.get("timeStart").toString().dropLast(8)).toLong()
+                    var totalstromverbrauch = 0F
                     data?.stream()?.forEach { entry ->
                         Log.d("OkHttp", entry.jsonObject["timeStart"].toString() + " " + ((entry.jsonObject["timeStart"].toString().toLong()-diff)).toString())
                         entries.add(BarEntry((entry.jsonObject["timeStart"].toString().toLong()-diff).toFloat(), entry.jsonObject["Momentanleistung"].toString().toFloat()))
+                        totalstromverbrauch += entry.jsonObject["Momentanleistung"].toString().toFloat()
                     }
-
+                    val sharedPreferences = mContext.getSharedPreferences(
+                        "com.mas.smartmeter.mqttpreferences",
+                        Context.MODE_PRIVATE
+                    )
+                    val strompreis = sharedPreferences.getFloat("strompreis", 0F)
+                    dashboardViewModel.meowPost(((totalstromverbrauch/100000)*strompreis).toString())
                     val themeColor = TypedValue()
                     val primaryColor = TypedValue()
                     TypedValue()
                     val dataSet = BarDataSet(entries, "Momentanleistung")
-                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorOnBackground, themeColor, true)
-                    mContext.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, primaryColor, true)
+                    mContext.theme.resolveAttribute(R.attr.colorOnBackground, themeColor, true)
+                    mContext.theme.resolveAttribute(R.attr.colorPrimary, primaryColor, true)
                     dataSet.color = primaryColor.data
                     dataSet.valueTextColor = themeColor.data
                     dataSet.barBorderColor = primaryColor.data
