@@ -25,4 +25,6 @@
     <string name="tab_day">Tag</string>
     <string name="tab_week">Woche</string>
     <string name="tab_month">Monat</string>
+    <string name="choose_date_short">Auswahl</string>
+    <string name="date_range_default">00.00 – 00.00</string>
 </resources>
