@@ -6,14 +6,48 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     tools:context=".ui.dashboard.DashboardFragment">
-
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/date_picker_day"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5sp"
+        android:text="@string/choose_date_short"
+        app:icon="@drawable/ic_baseline_today_24"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/date_picker_reset" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/date_picker_reset"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginEnd="5sp"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:icon="@drawable/ic_baseline_restore_24"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bar_chart_day"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <TextView
+        android:id="@+id/text_chart_range"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="@string/date_range_default"
+        android:textColor="?attr/colorOnBackground"
+        android:textAlignment="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bar_chart_day"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/date_picker_day"/>
     <com.github.mikephil.charting.charts.BarChart
-        android:id="@+id/barChartTest"
+        android:id="@+id/bar_chart_day"
         android:layout_width="match_parent"
         android:layout_height="220dp"
-        android:layout_marginTop="20dp"
-        app:layout_constraintTop_toTopOf="parent" />
-
+        tools:layout_editor_absoluteY="20dp"
+        app:layout_constraintTop_toBottomOf="@id/date_picker_day" />
     <TextView
         android:id="@+id/textViewStrompreis"
         android:layout_width="wrap_content"
@@ -22,6 +56,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/barChartTest" />
+        app:layout_constraintTop_toBottomOf="@+id/bar_chart_day" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
