@@ -6,15 +6,10 @@ import androidx.lifecycle.ViewModel
 
 class DashboardViewModel : ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "No Data"
-    }
+    private val _text = MutableLiveData<String>()
     val text: LiveData<String> = _text
 
     fun meow(currentpower: String){
         _text.value = "$currentpower Watt"
-    }
-    fun meowPost(onedaypower: String){
-        _text.postValue("$onedaypower Euro")
     }
 }

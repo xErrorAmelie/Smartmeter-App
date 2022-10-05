@@ -10,6 +10,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.databinding.FragmentDashboardBinding
@@ -30,6 +32,12 @@ class DashboardFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    companion object {
+        private val _currentMqttData = MutableLiveData<Pair<Long,Float>?>().apply {
+            value = null
+        }
+        val textPriceYesterday:LiveData<Pair<Long,Float>?> = _currentMqttData
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -68,7 +76,7 @@ class DashboardFragment : Fragment() {
             Context.MODE_PRIVATE
         )
         val broker = sharedPreferences.getString("broker", "empty")
-        val port = sharedPreferences.getString("port", "emtpy")
+        val port = sharedPreferences.getInt("port", 8883)
         val topic = sharedPreferences.getString("topic", "empty")
         val qos = 1
         val clientId = MqttClient.generateClientId()
@@ -107,6 +115,7 @@ class DashboardFragment : Fragment() {
                                             ContentValues.TAG,
                                             "Topic: \"$topic\", Message: \"$message\""
                                         )
+                                        _currentMqttData.postValue(Pair(System.currentTimeMillis(), message.toString().toFloat()))
                                         dashboardViewModel.meow(message.toString())
                                     }
 

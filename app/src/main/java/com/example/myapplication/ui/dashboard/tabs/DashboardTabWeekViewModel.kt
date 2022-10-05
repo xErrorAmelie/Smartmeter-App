@@ -5,14 +5,14 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.github.mikephil.charting.data.BarData
 
-class DashboardTabDayViewModel : ViewModel() {
+class DashboardTabWeekViewModel : ViewModel() {
     private val _barChartData = MutableLiveData<BarData>().apply {
         value = BarData()
     }
-    private val _textPriceYesterday = MutableLiveData<Pair<String,Int?>>().apply {
+    private val _textPriceLast = MutableLiveData<Pair<String,Int?>>().apply {
         value = Pair("-,--€", null)
     }
-    private val _textPriceBeforeYesterday = MutableLiveData<String>().apply {
+    private val _textPriceBeforeLast = MutableLiveData<String>().apply {
         value = "-,--€"
     }
     private val _textPriceChosen = MutableLiveData<String>().apply {
@@ -22,17 +22,17 @@ class DashboardTabDayViewModel : ViewModel() {
         value = "-,--€"
     }
     private val _textChosenDays = MutableLiveData<String>()
-    val textPriceYesterday: LiveData<Pair<String,Int?>> = _textPriceYesterday
-    val textPriceBeforeYesterday: LiveData<String> = _textPriceBeforeYesterday
+    val textPriceLast: LiveData<Pair<String,Int?>> = _textPriceLast
+    val textPriceBeforeLast: LiveData<String> = _textPriceBeforeLast
     val barChartData: LiveData<BarData> = _barChartData
     val textPriceChosen: LiveData<String> = _textPriceChosen
     val textPowerChosen: LiveData<String> = _textPowerChosen
     val textChosenDays: LiveData<String> = _textChosenDays
-    fun priceYesterdayPost(onedaypower: String,change: Int?){
-        _textPriceYesterday.postValue(Pair(onedaypower, change))
+    fun priceLastPost(onedaypower: String, change: Int?){
+        _textPriceLast.postValue(Pair(onedaypower, change))
     }
-    fun priceBeforeYesterdayPost(onedaypower: String){
-        _textPriceBeforeYesterday.postValue(onedaypower)
+    fun priceBeforeLastPost(onedaypower: String){
+        _textPriceBeforeLast.postValue(onedaypower)
     }
     fun barChartDataPost(onedaypower: BarData?){
         _barChartData.postValue(onedaypower)

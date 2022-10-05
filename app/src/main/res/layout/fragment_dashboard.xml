@@ -38,9 +38,9 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             android:textSize="38sp"
             android:textColor="@color/white"
+            android:text="@string/no_data"
             android:textStyle="bold"
             android:layout_gravity="center"/>
-
     </LinearLayout>
 
     <com.google.android.material.tabs.TabLayout
@@ -71,9 +71,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tablayout_dashboard"
-        app:layout_constraintVertical_bias="1.0"
-        tools:layout_editor_absoluteX="-65dp">
+        app:layout_constraintTop_toBottomOf="@id/tablayout_dashboard">
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
 

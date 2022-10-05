@@ -7,7 +7,7 @@ import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.data.BarDataSet
 
 object ChartUtil {
-    fun formatBarChart (mContext: Context, valueCount: Int, chart:BarChart, dataSet:BarDataSet) {
+    fun formatBarChart (mContext: Context, valueCount: Int, chart:BarChart, dataSet:BarDataSet, offset:Boolean) {
         val themeColor = TypedValue()
         val primaryColor = TypedValue()
         val number = valueCount.toFloat()
@@ -18,19 +18,28 @@ object ChartUtil {
         dataSet.barBorderColor = primaryColor.data
         dataSet.valueTextSize = 10F
         chart.xAxis.textColor = themeColor.data
-        chart.xAxis.axisMaximum = number -0.5f
-        chart.xAxis.axisMinimum = -0.5f
+
+
         chart.xAxis.granularity = 1f
-        val limitLineEnd = LimitLine(number -0.5f)
-        limitLineEnd.lineColor = chart.xAxis.gridColor
-        limitLineEnd.lineWidth = 0.4f
-        chart.xAxis.addLimitLine(limitLineEnd)
+
         chart.legend.textColor = themeColor.data
         chart.axisLeft.axisMinimum = 0f
         chart.axisLeft.axisMaximum = dataSet.yMax * 1.15f
         chart.axisLeft.textColor = themeColor.data
         chart.setVisibleYRange(-1f, dataSet.yMax * 1.15f, chart.axisLeft.axisDependency)
-        chart.setVisibleXRange(0f, number)
+        if(offset) {
+            chart.xAxis.axisMinimum = -0.5f
+            chart.xAxis.axisMaximum = number-0.5f
+            val limitLineEnd = LimitLine(number -0.5f)
+            limitLineEnd.lineColor = chart.xAxis.gridColor
+            limitLineEnd.lineWidth = 0.4f
+            chart.xAxis.addLimitLine(limitLineEnd)
+            chart.setVisibleXRange(0f, number)
+        } else {
+            chart.xAxis.axisMaximum = number
+            chart.xAxis.axisMinimum = 0f
+            chart.setVisibleXRange(0f, number+0.001f)
+        }
         chart.setFitBars(true)
         chart.axisRight.isEnabled = false
         chart.description.isEnabled = false

@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.dashboard.tabs
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.example.myapplication.R
 import com.example.myapplication.databinding.FragmentDashboardTabDayBinding
 import com.example.myapplication.util.ChartUtil
 import com.github.mikephil.charting.charts.BarChart
@@ -31,15 +33,15 @@ import kotlin.math.roundToInt
 class DashboardTabDay : Fragment() {
     private lateinit var mContext: Context
     private var _binding: FragmentDashboardTabDayBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
+    private var currentStartTime = 0L
+    private val okHttpClient = OkHttpClient()
     private lateinit var dashboardTabDayViewModel: DashboardTabDayViewModel
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mContext = context
     }
+    @SuppressLint("SetTextI18n")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -47,7 +49,32 @@ class DashboardTabDay : Fragment() {
         _binding = FragmentDashboardTabDayBinding.inflate(inflater, container, false)
         dashboardTabDayViewModel = ViewModelProvider(this)[DashboardTabDayViewModel::class.java]
         dashboardTabDayViewModel.textPriceYesterday.observe(viewLifecycleOwner) {
-            binding.textStrompreisGestern.text = it
+            if(it.second == null) {
+                binding.preisGesternCard.setCardBackgroundColor(mContext.getColor(R.color.orange_700))
+                binding.preisVorgesternCard.setCardBackgroundColor(mContext.getColor(R.color.orange_700))
+                binding.textStrompreisGestern.text = it.first
+                return@observe
+            }
+            val changeString =
+                if (it.second!! > 999) "+${getString(R.string.a_lot)}"
+                else if (it.second!! > 0) "+%d%%".format(
+                    it.second
+                )
+                else if (it.second!! < -999) "-${getString(R.string.a_lot)}"
+                else "%d%%".format(it.second)
+            binding.textStrompreisGestern.text = "${it.first} ($changeString)"
+            if(it.second!! <0) {
+                binding.preisGesternCard.setCardBackgroundColor(mContext.getColor(R.color.light_green_700))
+                binding.preisVorgesternCard.setCardBackgroundColor(mContext.getColor(R.color.red_700))
+            }
+            else if(it.second!! >0){
+                binding.preisGesternCard.setCardBackgroundColor(mContext.getColor(R.color.red_700))
+                binding.preisVorgesternCard.setCardBackgroundColor(mContext.getColor(R.color.light_green_700))
+            }
+            else {
+                binding.preisGesternCard.setCardBackgroundColor(mContext.getColor(R.color.orange_700))
+                binding.preisVorgesternCard.setCardBackgroundColor(mContext.getColor(R.color.orange_700))
+            }
         }
         dashboardTabDayViewModel.textPriceBeforeYesterday.observe(viewLifecycleOwner) {
             binding.textStrompreisVorgestern.text = it
@@ -58,67 +85,26 @@ class DashboardTabDay : Fragment() {
         dashboardTabDayViewModel.textPriceChosen.observe(viewLifecycleOwner) {
             binding.textKostenAuswahl.text = it
         }
+        dashboardTabDayViewModel.textChosenDays.observe(viewLifecycleOwner) {
+            binding.textTagAuswahl.text = it
+        }
         dashboardTabDayViewModel.barChartData.observe(viewLifecycleOwner) {
             binding.barChartDay.data = it
             binding.barChartDay.invalidate()
         }
         val root: View = binding.root
         val chartHours = binding.barChartDay
-        val time = System.currentTimeMillis()
-        val timeStart = time - 25 * 60 * 60 * 1000
+        var time = Date().time
+        val offset = TimeZone.getDefault().getOffset(time)
+        var timeStart = (time + offset) / 86400000L * 86400000L - offset
         refreshChart(chartHours, Pair(timeStart, time))
         val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val dateBeforeYesterday = dateFormatter.format(time - 2 * 24 * 60 * 60 * 1000)
         val dateYesterday = dateFormatter.format(time - 1 * 24 * 60 * 60 * 1000)
-        val requestLastDays = Request.Builder()
-            .url("http://10.0.0.26:8080/api/v1/daily/?day_start=$dateBeforeYesterday&day_end=$dateYesterday")
-            .build()
-        OkHttpClient().newCall(requestLastDays).enqueue(object: Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("OkHttp", "OkHttp is not OK" + e.message)
-            }
-            override fun onResponse(call: Call, response: Response) {
-                response.body?.let {
-                    val resString = it.string()
-                    val resJson = Json.parseToJsonElement(resString)
-                    val sharedPreferences = mContext.getSharedPreferences(
-                        "com.mas.smartmeter.mqttpreferences",
-                        Context.MODE_PRIVATE
-                    )
-                    val strompreis = sharedPreferences.getFloat("strompreis", 0F)
-                    if (response.code == 200) {
-                        val number = resJson.jsonObject["found"]?.toString()?.toInt()
-                        if (number != null && number > 0) {
-                            var verbrauchVorgestern:Float? = null
-                            for(value in 0 until number) {
-                                val obj = resJson.jsonObject["data"]?.jsonArray?.get(value)?.jsonObject
-                                val day = obj?.get("day").toString().replace("\"", "")
-                                val totalstromverbrauch = obj?.get("Gesamtleistung").toString().toFloat()
-                                val preis = "%.2f".format((totalstromverbrauch/100000)*strompreis)
-                                if(day == dateYesterday) {
-                                    if(verbrauchVorgestern != null) {
-                                        val changePercentage = (100 - ((verbrauchVorgestern/totalstromverbrauch)*100)).roundToInt()
-                                        val changeString =
-                                            if(changePercentage > 0) "+%d%%".format(changePercentage)
-                                            else "%d%%".format(changePercentage)
-                                        dashboardTabDayViewModel.priceYesterdayPost("${preis}€ ($changeString)")
-                                    } else {
-                                        dashboardTabDayViewModel.priceYesterdayPost("${preis}€")
-                                    }
-                                } else if(day == dateBeforeYesterday) {
-                                    dashboardTabDayViewModel.priceBeforeYesterdayPost("${preis}€")
-                                    verbrauchVorgestern = totalstromverbrauch
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        })
+        updateLastDaysDisplay(dateBeforeYesterday, dateYesterday)
         val datePicker =
             MaterialDatePicker.Builder.datePicker()
-                .setTitleText("Woche auswählen")
+                .setTitleText(getString(R.string.choose_date_title))
                 .setCalendarConstraints(
                     CalendarConstraints.Builder()
                     .setEnd(MaterialDatePicker.thisMonthInUtcMilliseconds())
@@ -136,22 +122,110 @@ class DashboardTabDay : Fragment() {
             }
             datePicker.show(parentFragmentManager, "")
         }
+        binding.datePickerReset.setOnClickListener {
+            time = Date().time
+            timeStart = (time + offset) / 86400000L * 86400000L - offset
+            chartHours.data = BarData()
+            chartHours.invalidate()
+            refreshChart(chartHours, Pair(timeStart, time))
+        }
+        binding.dateMoveLeft.setOnClickListener {
+            okHttpClient.dispatcher.queuedCalls().forEach { it.cancel() }
+            okHttpClient.dispatcher.runningCalls().forEach { it.cancel() }
+            val endTime = currentStartTime
+            val startTime = endTime - 24 * 60 * 60 * 1000
+            refreshChart(chartHours, Pair(startTime,endTime))
+        }
+        binding.dateMoveRight.setOnClickListener {
+            okHttpClient.dispatcher.queuedCalls().forEach { it.cancel() }
+            okHttpClient.dispatcher.runningCalls().forEach { it.cancel() }
+            val startTime = currentStartTime + 24 * 60 * 60 * 1000
+            val endTime = startTime + 24 * 60 * 60 * 1000
+            if(startTime > System.currentTimeMillis()) return@setOnClickListener
+            refreshChart(chartHours, Pair(startTime,endTime))
+        }
         return root
     }
-    private fun refreshChart(chartHours: BarChart, dateRange:Pair<Long, Long>) {
-        val client = OkHttpClient()
-        val dateFormatterUI = SimpleDateFormat("dd.MM.", Locale.getDefault())
-        val showDate = dateFormatterUI.format(dateRange.first).let { first ->
-            dateFormatterUI.format(dateRange.second-1).let { second ->
-                if(first == second) first
-                else "$first - $second"
-            }
-        }
-        binding.textChartRange.text =  showDate
-        val requestHours = Request.Builder()
-            .url("http://10.0.0.26:8080/api/v1/hourly/?time_start=${dateRange.first}&time_end=${dateRange.second}")
+
+    private fun updateLastDaysDisplay(
+        dateBeforeYesterday: String?,
+        dateYesterday: String?
+    ) {
+        val sharedPreferences = requireContext().getSharedPreferences(
+            "com.mas.smartmeter.mqttpreferences",
+            Context.MODE_PRIVATE
+        )
+        val requestLastDays = Request.Builder()
+            .url("${sharedPreferences.getString("database_host", "http://127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=$dateBeforeYesterday&day_end=$dateYesterday")
+            .addHeader("Authorization", sharedPreferences.getString("database_api_token", "")!!)
             .build()
-        client.newCall(requestHours).enqueue(object: Callback {
+        OkHttpClient().newCall(requestLastDays).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("OkHttp", "OkHttp is not OK" + e.message)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.body?.let {
+                    val resString = it.string()
+                    val resJson = Json.parseToJsonElement(resString)
+                    val strompreis = sharedPreferences.getFloat("strompreis", 0F)
+                    if (response.code == 200) {
+                        val number = resJson.jsonObject["found"]?.toString()?.toInt()
+                        if (number != null && number > 0) {
+                            var verbrauchVorgestern: Float? = null
+                            for (value in 0 until number) {
+                                val obj =
+                                    resJson.jsonObject["data"]?.jsonArray?.get(value)?.jsonObject
+                                val day = obj?.get("day").toString().replace("\"", "")
+                                val totalstromverbrauch =
+                                    obj?.get("Gesamtleistung").toString().toFloat()
+                                val preis =
+                                    "%.2f".format((totalstromverbrauch / 100000) * strompreis)
+                                if (day == dateYesterday) {
+                                    if (verbrauchVorgestern != null) {
+                                        val changePercentage =
+                                            (((totalstromverbrauch / verbrauchVorgestern) * 100)-100).roundToInt()
+                                        dashboardTabDayViewModel.priceYesterdayPost(
+                                            "${preis}€",
+                                            changePercentage
+                                        )
+                                    } else {
+                                        dashboardTabDayViewModel.priceYesterdayPost("${preis}€", null)
+                                    }
+                                } else if (day == dateBeforeYesterday) {
+                                    dashboardTabDayViewModel.priceBeforeYesterdayPost("${preis}€")
+                                    verbrauchVorgestern = totalstromverbrauch
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    private fun refreshChart(chartHours: BarChart, dateRange:Pair<Long, Long>) {
+        val sharedPreferences = requireContext().getSharedPreferences(
+            "com.mas.smartmeter.mqttpreferences",
+            Context.MODE_PRIVATE
+        )
+        currentStartTime = dateRange.first
+        val timeFormatterUI = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val dayOfWeekFormatterUI = SimpleDateFormat("EEE", Locale.getDefault())
+        val dateFormatterUI = SimpleDateFormat("dd.MM.", Locale.getDefault())
+        val date = dateRange.first+1
+        val showDate =
+            dateFormatterUI.format(date).let { displayDate ->
+                if(displayDate == dateFormatterUI.format(System.currentTimeMillis())) getString(R.string.today)
+                else dayOfWeekFormatterUI.format(date) + " " + displayDate
+            }
+        binding.textChartRange.text = showDate
+        val requestHours = Request.Builder()
+            .url("${sharedPreferences.getString("database_host", "http://127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/hourly/?time_start=${dateRange.first}&time_end=${dateRange.second}")
+            .addHeader("Authorization", sharedPreferences.getString("database_api_token", "")!!)
+            .build()
+        okHttpClient.newCall(requestHours).enqueue(object: Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("OkHttp", "OkHttp is not OK" + e.message)
             }
@@ -161,37 +235,43 @@ class DashboardTabDay : Fragment() {
                     val resString = it.string()
                     Log.i("OkHttp", resString)
                     val resJson = Json.parseToJsonElement(resString)
-                    val timeFormatterUI = SimpleDateFormat("HH:mm", Locale.getDefault())
                     if (response.code == 200) {
                         val number = resJson.jsonObject["found"]?.toString()?.toInt()
                         val entries: ArrayList<BarEntry> = ArrayList()
                         if (number != null && number > 0) {
+                            dashboardTabDayViewModel.textChosenDaysPost("$showDate (${getString(R.string.chosen)})")
                             val data = resJson.jsonObject["data"]!!.jsonArray
-                            val startDate =
-                                data[0].jsonObject["timeStart"].toString().toLong()
                             var gesamtverbrauch = 0f
+                            var emptyDays = 0
                             for(entry in 0 until number) {
+                                while(dateRange.first + (entry + emptyDays) * 1 * 60 * 60 * 1000 != data[entry].jsonObject["timeStart"].toString().toLong()) {
+                                    entries.add(BarEntry((entry+emptyDays).toFloat(), 0F))
+                                    emptyDays++
+                                }
                                 val leistung = data[entry].jsonObject["Momentanleistung"].toString().toFloat()
-                                entries.add(BarEntry(entry.toFloat(), leistung))
+                                entries.add(BarEntry((entry+emptyDays).toFloat() +0.5f, leistung))
                                 gesamtverbrauch+=leistung
                             }
                             chartHours.xAxis.valueFormatter = object: ValueFormatter() {
                                 override fun getAxisLabel(value: Float, axis: AxisBase?): String {
-                                    return if (value < number && value>=0) timeFormatterUI.format(value.roundToInt() * 60 * 60 * 1000 + startDate) else ""
+                                    return if (value < 25 && value>=0) timeFormatterUI.format(value.roundToInt() * 60 * 60 * 1000 + dateRange.first) else ""
                                 }
                             }
-                            val sharedPreferences = mContext.getSharedPreferences(
-                                "com.mas.smartmeter.mqttpreferences",
-                                Context.MODE_PRIVATE
-                            )
                             val strompreis = sharedPreferences.getFloat("strompreis", 0F)
                             val preis = "%.2f€".format((gesamtverbrauch/100000)*strompreis)
                             val verbrauch = "%.1fkWh".format(gesamtverbrauch/1000)
                             dashboardTabDayViewModel.textPowerChosenPost(verbrauch)
                             dashboardTabDayViewModel.textPriceChosenPost(preis)
-                        } else return
-                        val dataSet = BarDataSet(entries, "Wattstunden")
-                        ChartUtil.formatBarChart(mContext, number, chartHours, dataSet)
+                        } else {
+                            dashboardTabDayViewModel.textChosenDaysPost("$showDate (${getString(R.string.chosen)})")
+                            dashboardTabDayViewModel.textPowerChosenPost("-,--kWh")
+                            dashboardTabDayViewModel.textPriceChosenPost("-,--€")
+                            dashboardTabDayViewModel.barChartDataPost(BarData())
+                            return
+                        }
+                        val dataSet = BarDataSet(entries, getString(R.string.watthours))
+                        ChartUtil.formatBarChart(mContext, 24, chartHours, dataSet, false)
+                        dataSet.setDrawValues(false)
                         dashboardTabDayViewModel.barChartDataPost(BarData(dataSet))
                     }
 
