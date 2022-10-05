@@ -6,9 +6,7 @@ import androidx.lifecycle.ViewModel
 import com.github.mikephil.charting.data.BarData
 
 class DashboardTabMonthViewModel : ViewModel(){
-    private val _barChartData = MutableLiveData<BarData>().apply {
-        value = BarData()
-    }
+    private val _barChartData = MutableLiveData<BarData>()
     private val _textPriceLast = MutableLiveData<Pair<String,Int?>>().apply {
         value = Pair("-,--€", null)
     }
@@ -34,7 +32,7 @@ class DashboardTabMonthViewModel : ViewModel(){
     fun priceBeforeLastPost(onedaypower: String){
         _textPriceBeforeLast.postValue(onedaypower)
     }
-    fun barChartDataPost(onedaypower: BarData?){
+    fun barChartDataPost(onedaypower: BarData){
         _barChartData.postValue(onedaypower)
     }
     fun textPriceChosenPost(onedaypower: String){

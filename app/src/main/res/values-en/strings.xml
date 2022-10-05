@@ -56,4 +56,9 @@
     <string name="database">Database</string>
     <string name="not_valid_host">is not a valid URL scheme</string>
     <string name="strompreis">Power price</string>
+    <string name="database_host_not_selected">Please select Database address in settings</string>
+    <string name="mqtt_host_not_selected">Please select Broker address in Settings</string>
+    <string name="unauthorized">Database API key invalid</string>
+    <string name="internal_server_error">A Database Server Error occurred</string>
+    <string name="unexpected_error">An unexpected Database Error occurred</string>
 </resources>

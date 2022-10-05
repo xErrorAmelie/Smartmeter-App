@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.URLUtil
+import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.databinding.FragmentDashboardTabWeekBinding
@@ -52,6 +54,21 @@ class DashboardTabWeek : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDashboardTabWeekBinding.inflate(inflater, container, false)
+        val root: View = binding.root
+        val chartWeek = binding.barChartWeek
+        val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val lastSundayDateTime = LocalDate.now().with(TemporalAdjusters.previous(DayOfWeek.SUNDAY))
+        val lastSundayMidnightTimeString = "%04d-%02d-%02d".format(lastSundayDateTime.get(ChronoField.YEAR), lastSundayDateTime.get(ChronoField.MONTH_OF_YEAR), lastSundayDateTime.get(ChronoField.DAY_OF_MONTH))
+        val lastSundayMidnightTime = dateFormatter.parse(lastSundayMidnightTimeString)?.time?.plus(TimeZone.getDefault().getOffset(System.currentTimeMillis()))
+        val lastMondayMidnightTime = lastSundayMidnightTime?.minus(6 * 24 * 60 * 60 * 1000)
+        val weekBeforeLastSundayMidnightTime = lastMondayMidnightTime?.minus(1 * 24 * 60 * 60 * 1000)
+        val weekBeforeLastMondayMidnightTime = weekBeforeLastSundayMidnightTime?.minus(6 * 24 * 60 * 60 * 1000)
+        val thisMondayMidnightTime = lastSundayMidnightTime!!.plus(1 * 24 * 60 * 60 * 1000)
+        val thisSundayMidnightTime = lastSundayMidnightTime.plus(7 * 24 * 60 * 60 * 1000)
+        val sharedPreferences = mContext.getSharedPreferences(
+            "com.mas.smartmeter.mqttpreferences",
+            Context.MODE_PRIVATE
+        )
         dashboardTabWeekViewModel = ViewModelProvider(this)[DashboardTabWeekViewModel::class.java]
         dashboardTabWeekViewModel.textPriceLast.observe(viewLifecycleOwner) {
             if(it.second == null) {
@@ -61,11 +78,11 @@ class DashboardTabWeek : Fragment() {
                 return@observe
             }
             val changeString =
-                if (it.second!! > 999) "+${getString(R.string.a_lot)}"
+                if (it.second!! > 999) "+${mContext.getString(R.string.a_lot)}"
                 else if (it.second!! > 0) "+%d%%".format(
                     it.second
                 )
-                else if (it.second!! < -999) "-${getString(R.string.a_lot)}"
+                else if (it.second!! < -999) "-${mContext.getString(R.string.a_lot)}"
                 else "%d%%".format(it.second)
             binding.textStrompreisGestern.text = "${it.first} ($changeString)"
             if(it.second!! <0) {
@@ -97,29 +114,39 @@ class DashboardTabWeek : Fragment() {
             binding.barChartWeek.data = it
             binding.barChartWeek.invalidate()
         }
-        val root: View = binding.root
-        val chartWeek = binding.barChartWeek
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val lastSundayDateTime = LocalDate.now().with(TemporalAdjusters.previous(DayOfWeek.SUNDAY))
-        val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val lastSunday = "%04d-%02d-%02d".format(lastSundayDateTime.get(ChronoField.YEAR), lastSundayDateTime.get(ChronoField.MONTH_OF_YEAR), lastSundayDateTime.get(ChronoField.DAY_OF_MONTH))
-        val lastSundayTime = dateFormatter.parse(lastSunday)?.time?.plus(TimeZone.getDefault().getOffset(System.currentTimeMillis()))
-        val lastMondayTime = lastSundayTime?.minus(6 * 24 * 60 * 60 * 1000)
-        val previousLastSundayTime = lastMondayTime?.minus(1 * 24 * 60 * 60 * 1000)
-        val previousLastMondayTime = previousLastSundayTime?.minus(6 * 24 * 60 * 60 * 1000)
-        val thisMondayTime = lastSundayTime!!.plus(1 * 24 * 60 * 60 * 1000)
-        val thisSundayTime = lastSundayTime.plus(7 * 24 * 60 * 60 * 1000)
-        updateLastWeeksDisplay(dateFormatter, lastMondayTime, lastSundayTime, previousLastMondayTime, previousLastSundayTime)
-        refreshChart(chartWeek, Pair(thisMondayTime, thisSundayTime))
+        if(!URLUtil.isValidUrl(sharedPreferences.getString("database_host", ""))) {
+            Toast.makeText(mContext, mContext.getString(R.string.database_host_not_selected), Toast.LENGTH_LONG).show()
+            return root
+        }
+        try {
+            updateLastWeeksDisplay(
+                dateFormatter,
+                lastMondayMidnightTime,
+                lastSundayMidnightTime,
+                weekBeforeLastMondayMidnightTime,
+                weekBeforeLastSundayMidnightTime
+            )
+            refreshChart(chartWeek, Pair(thisMondayMidnightTime, thisSundayMidnightTime))
+        }catch (e:Error) {
+            Log.e("DashboardTabWeek", e.toString())
+        }
         binding.datePickerReset.setOnClickListener {
-            refreshChart(chartWeek, Pair(thisMondayTime, thisSundayTime))
+            try{
+                refreshChart(chartWeek, Pair(thisMondayMidnightTime, thisSundayMidnightTime))
+            }catch (e:Error) {
+                Log.e("DashboardTabWeek", e.toString())
+            }
         }
         binding.dateMoveLeft.setOnClickListener {
             okHttpClient.dispatcher.queuedCalls().forEach { it.cancel() }
             okHttpClient.dispatcher.runningCalls().forEach { it.cancel() }
             val endTime = currentStartTime - 1 * 24 * 60 * 60 * 1000
             val startTime = endTime - 6 * 24 * 60 * 60 * 1000
-            refreshChart(chartWeek, Pair(startTime,endTime))
+            try{
+                refreshChart(chartWeek, Pair(startTime,endTime))
+            }catch (e:Error) {
+                Log.e("DashboardTabWeek", e.toString())
+            }
         }
         binding.dateMoveRight.setOnClickListener {
             okHttpClient.dispatcher.queuedCalls().forEach { it.cancel() }
@@ -127,7 +154,11 @@ class DashboardTabWeek : Fragment() {
             val startTime = currentStartTime + 7 * 24 * 60 * 60 * 1000
             val endTime = startTime + 6 * 24 * 60 * 60 * 1000
             if(startTime > System.currentTimeMillis()) return@setOnClickListener
-            refreshChart(chartWeek, Pair(startTime,endTime))
+            try{
+                refreshChart(chartWeek, Pair(startTime,endTime))
+            }catch (e:Error) {
+                Log.e("DashboardTabWeek", e.toString())
+            }
         }
         return root
     }
@@ -139,44 +170,43 @@ class DashboardTabWeek : Fragment() {
         beforeLastSundayTime: Long?,
 
     ) {
-        val sharedPreferences = requireContext().getSharedPreferences(
+        val sharedPreferences = mContext.getSharedPreferences(
             "com.mas.smartmeter.mqttpreferences",
             Context.MODE_PRIVATE
         )
-        Log.d("a", "${sharedPreferences.getString("database_host", "http://127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=${dateFormatter.format(beforeLastMondayTime)}&day_end=${dateFormatter.format(beforeLastSundayTime)}")
-        val requestBeforeLastDays = Request.Builder()
+        Log.d("a", "${sharedPreferences.getString("database_host", "")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=${dateFormatter.format(beforeLastMondayTime)}&day_end=${dateFormatter.format(beforeLastSundayTime)}")
+        val requestWeekBeforeLast = Request.Builder()
             .url(
-                "${sharedPreferences.getString("database_host", "http://127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=${dateFormatter.format(beforeLastMondayTime)}&day_end=${dateFormatter.format(beforeLastSundayTime)}"
+                "${sharedPreferences.getString("database_host", "")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=${dateFormatter.format(beforeLastMondayTime)}&day_end=${dateFormatter.format(beforeLastSundayTime)}"
             )
             .addHeader("Authorization", sharedPreferences.getString("database_api_token", "")!!)
             .build()
-        OkHttpClient().newCall(requestBeforeLastDays).enqueue(object : Callback {
+        OkHttpClient().newCall(requestWeekBeforeLast).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e("OkHttp", "OkHttp is not OK" + e.message)
+                Log.e("OkHttp", e.message.toString())
             }
 
             override fun onResponse(call: Call, response: Response) {
                 response.body?.let {
-                    val resString = it.string()
-                    val resJson = Json.parseToJsonElement(resString)
-                    val strompreis = sharedPreferences.getFloat("strompreis", 0F)
+                    val powerPrice = sharedPreferences.getFloat("strompreis", 0F)
                     if (response.code == 200) {
-                        val number = resJson.jsonObject["found"]!!.toString().toInt()
-                        var gesamtverbrauch = 0F
-                        if (number > 0) {
-                            for (value in 0 until number) {
-                                val obj =
-                                    resJson.jsonObject["data"]!!.jsonArray[value].jsonObject
-                                gesamtverbrauch += obj["Gesamtleistung"].toString().toFloat()
+                        val resJsonWeekBeforeLast = Json.parseToJsonElement(it.string())
+                        val valueCountWeekBeforeLast = resJsonWeekBeforeLast.jsonObject["found"]!!.toString().toInt()
+                        var totalPowerUsageWeekBeforeLast = 0F
+                        if (valueCountWeekBeforeLast > 0) {
+                            for (value in 0 until valueCountWeekBeforeLast) {
+                                val valueJsonObject =
+                                    resJsonWeekBeforeLast.jsonObject["data"]!!.jsonArray[value].jsonObject
+                                totalPowerUsageWeekBeforeLast += valueJsonObject["Gesamtleistung"].toString().toFloat()
 
                             }
                             dashboardTabWeekViewModel.priceBeforeLastPost(
-                                "%.2f€".format(((gesamtverbrauch / 100000) * strompreis))
+                                "%.2f€".format(((totalPowerUsageWeekBeforeLast / 100000) * powerPrice))
                             )
                         }
-                        val requestLastDays = Request.Builder()
+                        val requestLastWeek = Request.Builder()
                             .url(
-                                "${sharedPreferences.getString("database_host", "http://127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=${
+                                "${sharedPreferences.getString("database_host", "")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=${
                                     dateFormatter.format(
                                         lastMondayTime
                                     )
@@ -185,29 +215,28 @@ class DashboardTabWeek : Fragment() {
                             )
                             .addHeader("Authorization", sharedPreferences.getString("database_api_token", "")!!)
                             .build()
-                        OkHttpClient().newCall(requestLastDays).enqueue(object : Callback {
+                        OkHttpClient().newCall(requestLastWeek).enqueue(object : Callback {
                             override fun onFailure(call: Call, e: IOException) {
-                                Log.e("OkHttp", "OkHttp is not OK" + e.message)
+                                Log.e("OkHttp", e.message.toString())
                             }
 
                             override fun onResponse(call: Call, response: Response) {
                                 response.body?.let { it2 ->
-                                    val resString2 = it2.string()
-                                    val resJson2 = Json.parseToJsonElement(resString2)
                                     if (response.code == 200) {
-                                        val number2 = resJson2.jsonObject["found"]!!.toString().toInt()
-                                        if (number2 > 0) {
-                                            var gesamtverbrauch2 = 0F
-                                            for (value in 0 until number2) {
-                                                val obj =
-                                                    resJson2.jsonObject["data"]!!.jsonArray[value].jsonObject
-                                                gesamtverbrauch2 += obj["Gesamtleistung"].toString().toFloat()
+                                        val resJsonLastWeek = Json.parseToJsonElement(it2.string())
+                                        val valueCountLastWeek = resJsonLastWeek.jsonObject["found"]!!.toString().toInt()
+                                        if (valueCountLastWeek > 0) {
+                                            var totalPowerUsageLastWeek = 0F
+                                            for (valueIndex in 0 until valueCountLastWeek) {
+                                                val valueJsonObject =
+                                                    resJsonLastWeek.jsonObject["data"]!!.jsonArray[valueIndex].jsonObject
+                                                totalPowerUsageLastWeek += valueJsonObject["Gesamtleistung"].toString().toFloat()
 
                                             }
                                             val changePercentage =
-                                                if(number>0)(((gesamtverbrauch2/gesamtverbrauch ) * 100)-100).roundToInt()
+                                                if(valueCountWeekBeforeLast>0)(((totalPowerUsageLastWeek/totalPowerUsageWeekBeforeLast ) * 100)-100).roundToInt()
                                                 else null
-                                            val preis = "%.2f".format(((gesamtverbrauch2 / 100000) * strompreis))
+                                            val preis = "%.2f".format(((totalPowerUsageLastWeek / 100000) * powerPrice))
                                             dashboardTabWeekViewModel.priceLastPost(
                                                 "$preis€",
                                                 changePercentage
@@ -225,7 +254,7 @@ class DashboardTabWeek : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun refreshChart(chartWeek:BarChart, dateRange:Pair<Long, Long>) {
-        val sharedPreferences = requireContext().getSharedPreferences(
+        val sharedPreferences = mContext.getSharedPreferences(
             "com.mas.smartmeter.mqttpreferences",
             Context.MODE_PRIVATE
         )
@@ -237,9 +266,8 @@ class DashboardTabWeek : Fragment() {
         val datePreviousWeek = dateFormatter.format(dateRange.first)
         val dateYesterday = dateFormatter.format(dateRange.second)
         binding.textChartRange.text = "${dateFormatterUI.format(dateRange.first)} - ${dateFormatterUI.format(dateRange.second)}"
-        Log.d("DashboardTabDay", "${sharedPreferences.getString("database_host", "127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=$datePreviousWeek&day_end=$dateYesterday")
         val requestHours = Request.Builder()
-            .url("${sharedPreferences.getString("database_host", "http://127.0.0.1")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=$datePreviousWeek&day_end=$dateYesterday")
+            .url("${sharedPreferences.getString("database_host", "")}:${sharedPreferences.getInt("database_port", 1)}/api/v1/daily/?day_start=$datePreviousWeek&day_end=$dateYesterday")
             .addHeader("Authorization", sharedPreferences.getString("database_api_token", "")!!)
             .build()
         client.newCall(requestHours).enqueue(object: Callback {
@@ -253,26 +281,26 @@ class DashboardTabWeek : Fragment() {
                     Log.i("OkHttp", resString)
                     val resJson = Json.parseToJsonElement(resString)
                     if (response.code == 200) {
-                        val number = resJson.jsonObject["found"]?.toString()?.toInt()
+                        val valueCount = resJson.jsonObject["found"]?.toString()?.toInt()
                         val entries: ArrayList<BarEntry> = ArrayList()
-                        if (number != null && number > 0) {
-                            val data = resJson.jsonObject["data"]!!.jsonArray
+                        if (valueCount != null && valueCount > 0) {
+                            val dataJsonArray = resJson.jsonObject["data"]!!.jsonArray
                             dashboardTabWeekViewModel.textChosenDaysPost("${dayOfWeekFormatterUI.format(dateRange.first)} ${dateFormatterUI.format(dateRange.first)} - ${dayOfWeekFormatterUI.format(dateRange.second)} ${dateFormatterUI.format(dateRange.second)}")
-                            var gesamtleistung = 0f
+                            var totalPower = 0f
                             var emptyDays = 0
-                            for(entry in 0 until number) {
+                            for(valueIndex in 0 until valueCount) {
 
-                                while(dateFormatter.format(dateRange.first + (entry + emptyDays) * 24 * 60 * 60 * 1000) != data[entry].jsonObject["day"].toString().replace("\"", "")) {
-                                    entries.add(BarEntry((entry+emptyDays).toFloat(), 0F))
+                                while(dateFormatter.format(dateRange.first + (valueIndex + emptyDays) * 24 * 60 * 60 * 1000) != dataJsonArray[valueIndex].jsonObject["day"].toString().replace("\"", "")) {
+                                    entries.add(BarEntry((valueIndex+emptyDays).toFloat(), 0F))
                                     emptyDays++
                                 }
-                                val leistung = data[entry].jsonObject["Gesamtleistung"].toString().toFloat()
-                                entries.add(BarEntry((entry+emptyDays).toFloat(), leistung))
-                                gesamtleistung += leistung
+                                val entryPower = dataJsonArray[valueIndex].jsonObject["Gesamtleistung"].toString().toFloat()
+                                entries.add(BarEntry((valueIndex+emptyDays).toFloat(), entryPower))
+                                totalPower += entryPower
                             }
-                            val strompreis = sharedPreferences.getFloat("strompreis", 0F)
-                            dashboardTabWeekViewModel.textPowerChosenPost("%.1fkWh".format(gesamtleistung/1000))
-                            dashboardTabWeekViewModel.textPriceChosenPost("%.2f€".format((gesamtleistung/100000)*strompreis))
+                            val powerPrice = sharedPreferences.getFloat("strompreis", 0F)
+                            dashboardTabWeekViewModel.textPowerChosenPost("%.1fkWh".format(totalPower/1000))
+                            dashboardTabWeekViewModel.textPriceChosenPost("%.2f€".format((totalPower/100000)*powerPrice))
                             chartWeek.xAxis.valueFormatter = object: ValueFormatter() {
                                 override fun getAxisLabel(value: Float, axis: AxisBase?): String {
                                     val time = value.roundToInt() * 24 * 60 * 60 * 1000+ dateRange.first
@@ -286,7 +314,7 @@ class DashboardTabWeek : Fragment() {
                             dashboardTabWeekViewModel.barChartDataPost(BarData())
                             return
                         }
-                        val dataSet = BarDataSet(entries, getString(R.string.watthours))
+                        val dataSet = BarDataSet(entries, mContext.getString(R.string.watthours))
                         ChartUtil.formatBarChart(mContext,  7, chartWeek, dataSet, true)
                         chartWeek.setXAxisRenderer(object:XAxisRenderer(chartWeek.viewPortHandler, chartWeek.xAxis, chartWeek.getTransformer(YAxis.AxisDependency.LEFT)) {
                             override fun drawLabel(

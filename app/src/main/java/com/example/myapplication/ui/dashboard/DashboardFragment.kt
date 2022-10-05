@@ -31,14 +31,12 @@ class DashboardFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
-
     companion object {
-        private val _currentMqttData = MutableLiveData<Pair<Long,Float>?>().apply {
+        private val mutableCurrentMqttData = MutableLiveData<Pair<Long,Float>?>().apply {
             value = null
         }
-        val textPriceYesterday:LiveData<Pair<Long,Float>?> = _currentMqttData
+        val currentMqttData:LiveData<Pair<Long,Float>?> = mutableCurrentMqttData
     }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -66,9 +64,7 @@ class DashboardFragment : Fragment() {
                     .replace(R.id.dashboard_tab_fragment, transFragment)
                     .commit()
             }
-
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
-
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
         val sharedPreferences = requireContext().getSharedPreferences(
@@ -86,14 +82,12 @@ class DashboardFragment : Fragment() {
         )
         try {
             val options = MqttConnectOptions()
-            options.userName = sharedPreferences.getString("username", "empty")
-            options.password = sharedPreferences.getString("password", "empty")!!.toCharArray()
+            options.userName = sharedPreferences.getString("username", "")
+            options.password = sharedPreferences.getString("password", "")!!.toCharArray()
             options.connectionTimeout = 10
             val token = client.connect(options)
             token.actionCallback = object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
-                    // We are connected
-                    Log.d(ContentValues.TAG, "MQTT verbunden")
                     try {
                         val subToken = client.subscribe(topic!!, qos)
                         subToken.actionCallback = object : IMqttActionListener {
@@ -105,8 +99,8 @@ class DashboardFragment : Fragment() {
                                             Log.e(ContentValues.TAG, cause.toString())
                                             Toast.makeText(requireContext(), cause.message, Toast.LENGTH_LONG).show()
                                         }
+                                        client.reconnect()
                                     }
-
                                     override fun messageArrived(
                                         topic: String?,
                                         message: MqttMessage?
@@ -115,17 +109,12 @@ class DashboardFragment : Fragment() {
                                             ContentValues.TAG,
                                             "Topic: \"$topic\", Message: \"$message\""
                                         )
-                                        _currentMqttData.postValue(Pair(System.currentTimeMillis(), message.toString().toFloat()))
-                                        dashboardViewModel.meow(message.toString())
+                                        mutableCurrentMqttData.postValue(Pair(System.currentTimeMillis(), message.toString().toFloat()))
+                                        dashboardViewModel.postText(message.toString())
                                     }
-
-                                    override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                                        TODO("Not yet implemented")
-                                    }
-
+                                    override fun deliveryComplete(token: IMqttDeliveryToken?) {}
                                 })
                             }
-
                             override fun onFailure(
                                 asyncActionToken: IMqttToken,
                                 exception: Throwable
@@ -139,10 +128,11 @@ class DashboardFragment : Fragment() {
                         Toast.makeText(requireContext(), e.message, Toast.LENGTH_LONG).show()
                     }
                 }
-
                 override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
                     Log.e(ContentValues.TAG, exception.toString())
-                    Toast.makeText(requireContext(), exception.message, Toast.LENGTH_LONG).show()
+                    if(IllegalArgumentException::class.java.isInstance(exception)) {
+                        Toast.makeText(requireContext(), mContext.getString(R.string.mqtt_host_not_selected), Toast.LENGTH_LONG).show()
+                    } else Toast.makeText(requireContext(), exception.message, Toast.LENGTH_LONG).show()
                 }
             }
         } catch (e: MqttException) {
@@ -151,13 +141,10 @@ class DashboardFragment : Fragment() {
         }
         return root
     }
-
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mContext = context
     }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

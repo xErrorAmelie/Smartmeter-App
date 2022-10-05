@@ -56,4 +56,9 @@
     <string name="not_valid_host">ist kein gültiges URL Schema</string>
     <string name="database">Datenbank</string>
     <string name="strompreis">Strompreis</string>
+    <string name="database_host_not_selected">Bitte Datenbankadresse in den Einstellungen angeben</string>
+    <string name="mqtt_host_not_selected">Bitte Brokeradresse in den Einstellungen angeben</string>
+    <string name="unauthorized">Falscher Datenbank API Schlüssel</string>
+    <string name="internal_server_error">Ein Datenbank Serverfehler ist aufgetreten</string>
+    <string name="unexpected_error">Ein unerwarteter Datenbank Fehler ist aufgetreten</string>
 </resources>

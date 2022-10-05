@@ -9,7 +9,7 @@ class DashboardViewModel : ViewModel() {
     private val _text = MutableLiveData<String>()
     val text: LiveData<String> = _text
 
-    fun meow(currentpower: String){
+    fun postText(currentpower: String){
         _text.value = "$currentpower Watt"
     }
 }
