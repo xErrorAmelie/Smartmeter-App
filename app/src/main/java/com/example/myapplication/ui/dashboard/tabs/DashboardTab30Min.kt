@@ -110,7 +110,8 @@ class DashboardTab30Min : Fragment() {
                         }
                         chart.legend.textColor = themeColor.data
                         chart.axisLeft.textColor = themeColor.data
-                        chart.axisRight.isEnabled = false
+                        chart.axisRight.setDrawGridLines(false)
+                        chart.axisRight.setDrawLabels(false)
                         chart.description.isEnabled = false
                         chart.data = LineData(dataSet)
                         chart.invalidate()
