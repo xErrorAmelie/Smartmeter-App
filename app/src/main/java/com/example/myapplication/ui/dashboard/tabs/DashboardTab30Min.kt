@@ -84,7 +84,7 @@ class DashboardTab30Min : Fragment() {
                         }
                         val data = Json.parseToJsonElement(it.string()).jsonObject["data"]?.jsonArray
                         val chartEntries: ArrayList<Entry> = ArrayList()
-                        chartXAxisDiff = (data?.get(0)?.jsonObject?.get("time").toString().dropLast(8) + "00000000").toLong()
+                        chartXAxisDiff = data?.get(0)?.jsonObject?.get("time").toString().toLong()
                         var totalPowerUsage = 0L
                         data?.stream()?.forEach { entry ->
                             chartEntries.add(Entry((entry.jsonObject["time"].toString().toLong()- chartXAxisDiff!!).toFloat(), entry.jsonObject["Momentanleistung"].toString().toFloat()))
