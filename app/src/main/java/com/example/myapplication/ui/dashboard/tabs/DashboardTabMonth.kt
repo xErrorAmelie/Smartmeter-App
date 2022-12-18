@@ -237,7 +237,7 @@ class DashboardTabMonth : Fragment() {
 
                                             }
                                             val changePercentage =
-                                                if(valueCountMonthBeforeLast > 0)
+                                                if(totalPowerUsageMonthBeforeLast <= 0) 0 else if(valueCountMonthBeforeLast > 0)
                                                     (((totalPowerUsageLastMonth/totalPowerUsageMonthBeforeLast ) * 100)-100).roundToInt()
                                                 else null
                                             val preis = "%.2f".format(((totalPowerUsageLastMonth / 100000) * powerPrice))

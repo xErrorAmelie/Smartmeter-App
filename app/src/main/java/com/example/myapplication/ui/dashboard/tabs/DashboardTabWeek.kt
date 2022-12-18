@@ -234,7 +234,7 @@ class DashboardTabWeek : Fragment() {
 
                                             }
                                             val changePercentage =
-                                                if(valueCountWeekBeforeLast>0)(((totalPowerUsageLastWeek/totalPowerUsageWeekBeforeLast ) * 100)-100).roundToInt()
+                                                if(totalPowerUsageWeekBeforeLast <= 0f) 0 else if(valueCountWeekBeforeLast>0)(((totalPowerUsageLastWeek/totalPowerUsageWeekBeforeLast ) * 100)-100).roundToInt()
                                                 else null
                                             val preis = "%.2f".format(((totalPowerUsageLastWeek / 100000) * powerPrice))
                                             dashboardTabWeekViewModel.priceLastPost(
@@ -307,10 +307,31 @@ class DashboardTabWeek : Fragment() {
                                     return if (value < 8 && value>=0) dayOfWeekFormatterUI.format(time) + "\n" + dateFormatterUI.format(time) else " \n "
                                 }
                             }
+
                         } else {
                             dashboardTabWeekViewModel.textChosenDaysPost("${dayOfWeekFormatterUI.format(dateRange.first)} ${dateFormatterUI.format(dateRange.first)} - ${dayOfWeekFormatterUI.format(dateRange.second)} ${dateFormatterUI.format(dateRange.second)}")
                             dashboardTabWeekViewModel.textPowerChosenPost("-,--kWh")
                             dashboardTabWeekViewModel.textPriceChosenPost("-,--€")
+                            ChartUtil.formatBarChart(mContext,  7, chartWeek, BarDataSet(List(7) { _ ->
+                                BarEntry(
+                                    0f,
+                                    0f
+                                )
+                            }, "Watt"), true)
+                            chartWeek.setXAxisRenderer(object:XAxisRenderer(chartWeek.viewPortHandler, chartWeek.xAxis, chartWeek.getTransformer(YAxis.AxisDependency.LEFT)) {
+                                override fun drawLabel(
+                                    c: Canvas?,
+                                    formattedLabel: String?,
+                                    x: Float,
+                                    y: Float,
+                                    anchor: MPPointF?,
+                                    angleDegrees: Float
+                                ) {
+                                    formattedLabel?.split("\n")?.let { lines ->
+                                        return
+                                    }
+                                }
+                            })
                             dashboardTabWeekViewModel.barChartDataPost(BarData())
                             return
                         }

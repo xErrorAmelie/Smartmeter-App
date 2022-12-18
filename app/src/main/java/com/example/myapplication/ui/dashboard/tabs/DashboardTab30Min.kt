@@ -125,21 +125,25 @@ class DashboardTab30Min : Fragment() {
         }
         DashboardFragment.currentMqttData.observe(viewLifecycleOwner) { timeValuePair ->
             if(timeValuePair != null && chartXAxisDiff != null) {
-                val dataSet = chart.data.getDataSetByIndex(0)
-                if(dataSet.getEntryForIndex(dataSet.entryCount-1).x.toLong() + chartXAxisDiff!! < timeValuePair.first - 10 * 10000) {
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.dashboard_tab_fragment, newInstance())
-                        .commit()
+                if(chart.data.dataSetCount > 0){
+                    val dataSet = chart.data.getDataSetByIndex(0)
+                    if(dataSet.entryCount > 0) {
+                        if(dataSet.getEntryForIndex(dataSet.entryCount-1).x.toLong() + chartXAxisDiff!! < timeValuePair.first - 10 * 10000) {
+                            parentFragmentManager.beginTransaction()
+                                .replace(R.id.dashboard_tab_fragment, newInstance())
+                                .commit()
+                        }
+                        currentTotalPower -= dataSet.getEntryForIndex(0).y.toLong()
+                        currentTotalPower += timeValuePair.second.toLong()
+                        dataSet.removeEntry(0)
+                        dataSet.addEntry(Entry((timeValuePair.first-chartXAxisDiff!!).toFloat(), timeValuePair.second))
+                        chart.data = LineData(dataSet)
+                        chart.invalidate()
+                        dashboardTab30MinViewModel.textPeakPost("%dW".format(dataSet.yMax.toInt()))
+                        dashboardTab30MinViewModel.textLowPost("%dW".format(dataSet.yMin.toInt()))
+                        dashboardTab30MinViewModel.textAveragePost("%dW".format((currentTotalPower / dataSet.entryCount).toInt()))
+                    }
                 }
-                currentTotalPower -= dataSet.getEntryForIndex(0).y.toLong()
-                currentTotalPower += timeValuePair.second.toLong()
-                dataSet.removeEntry(0)
-                dataSet.addEntry(Entry((timeValuePair.first-chartXAxisDiff!!).toFloat(), timeValuePair.second))
-                chart.data = LineData(dataSet)
-                chart.invalidate()
-                dashboardTab30MinViewModel.textPeakPost("%dW".format(dataSet.yMax.toInt()))
-                dashboardTab30MinViewModel.textLowPost("%dW".format(dataSet.yMin.toInt()))
-                dashboardTab30MinViewModel.textAveragePost("%dW".format((currentTotalPower / dataSet.entryCount).toInt()))
             }
         }
         return root

@@ -21,7 +21,7 @@ object ChartUtil {
         chart.axisLeft.textColor = themeColor.data
         chart.axisLeft.axisMinimum = 0f
         chart.axisLeft.axisMaximum = dataSet.yMax * 1.15f
-        chart.setVisibleYRange(-1f, dataSet.yMax * 1.15f, chart.axisLeft.axisDependency)
+        chart.setVisibleYRange(-1f, if(dataSet.yMax<1000) 1000f else dataSet.yMax * 1.15f, chart.axisLeft.axisDependency)
         if(offset) {
             chart.xAxis.axisMinimum = -0.5f
             chart.xAxis.axisMaximum = number-0.5f

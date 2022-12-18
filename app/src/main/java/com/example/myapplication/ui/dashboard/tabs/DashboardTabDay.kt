@@ -209,8 +209,9 @@ class DashboardTabDay : Fragment() {
                                     "%.2f".format((resultTotalPowerUsage / 100000) * powerPrice)
                                 if (resultDay == dateYesterday) {
                                     if (powerUsageDayBeforeYesterday != null) {
+
                                         val changePercentage =
-                                            (((resultTotalPowerUsage / powerUsageDayBeforeYesterday) * 100)-100).roundToInt()
+                                            if(powerUsageDayBeforeYesterday <= 0) 0 else (((resultTotalPowerUsage / powerUsageDayBeforeYesterday) * 100)-100).roundToInt()
                                         dashboardTabDayViewModel.priceYesterdayPost(
                                             "${preis}€",
                                             changePercentage
@@ -297,11 +298,10 @@ class DashboardTabDay : Fragment() {
                             dashboardTabDayViewModel.textPowerChosenPost("-,--kWh")
                             dashboardTabDayViewModel.textPriceChosenPost("-,--€")
                             dashboardTabDayViewModel.barChartDataPost(BarData())
-                            return
+                            return@let
                         }
                         val dataSet = BarDataSet(chartEntries, mContext.getString(R.string.watthours))
                         ChartUtil.formatBarChart(mContext, 24, chartHours, dataSet, false)
-                        dataSet.setDrawValues(false)
                         dashboardTabDayViewModel.barChartDataPost(BarData(dataSet))
                     }
 
