@@ -61,4 +61,6 @@
     <string name="unauthorized">Database API key invalid</string>
     <string name="internal_server_error">A Database Server Error occurred</string>
     <string name="unexpected_error">An unexpected Database Error occurred</string>
+    <string name="no_connection">No Connection</string>
+    <string name="connecting">Connecting</string>
 </resources>

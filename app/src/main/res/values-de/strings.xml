@@ -61,4 +61,6 @@
     <string name="unauthorized">Falscher Datenbank API Schlüssel</string>
     <string name="internal_server_error">Ein Datenbank Serverfehler ist aufgetreten</string>
     <string name="unexpected_error">Ein unerwarteter Datenbank Fehler ist aufgetreten</string>
+    <string name="no_connection">Keine Verbindung</string>
+    <string name="connecting">Verbinde</string>
 </resources>

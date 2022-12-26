@@ -26,6 +26,7 @@ import org.eclipse.paho.client.mqttv3.*
 
 class DashboardFragment : Fragment() {
     private lateinit var mContext:Context
+    private lateinit var client:MqttAndroidClient
     private var _binding: FragmentDashboardBinding? = null
 
     // This property is only valid between onCreateView and
@@ -37,14 +38,16 @@ class DashboardFragment : Fragment() {
         }
         val currentMqttData:LiveData<Pair<Long,Float>?> = mutableCurrentMqttData
     }
+
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
-        val dashboardViewModel = ViewModelProvider(this)[DashboardViewModel::class.java]
         val textView: TextView = binding.textHome
+        val dashboardViewModel = ViewModelProvider(this)[DashboardViewModel::class.java]
         dashboardViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it.toString()
         }
@@ -67,19 +70,24 @@ class DashboardFragment : Fragment() {
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
-        val sharedPreferences = requireContext().getSharedPreferences(
-            "com.mas.smartmeter.mqttpreferences",
-            Context.MODE_PRIVATE
-        )
+
+        return root
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val sharedPreferences = requireContext().getSharedPreferences("com.mas.smartmeter.mqttpreferences", Context.MODE_PRIVATE)
         val broker = sharedPreferences.getString("broker", "empty")
         val port = sharedPreferences.getInt("port", 8883)
         val topic = sharedPreferences.getString("topic", "empty")
-        val qos = 1
-        val clientId = MqttClient.generateClientId()
-        val client = MqttAndroidClient(
+        val clientId: String = MqttClient.generateClientId()
+        client = MqttAndroidClient(
             this.requireContext(), "$broker:$port",
             clientId
         )
+
+        val dashboardViewModel = ViewModelProvider(this)[DashboardViewModel::class.java]
+        val qos = 1
         try {
             val options = MqttConnectOptions()
             options.userName = sharedPreferences.getString("username", "")
@@ -89,6 +97,7 @@ class DashboardFragment : Fragment() {
             token.actionCallback = object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
                     try {
+                        dashboardViewModel.postText(getString(R.string.connecting), false)
                         val subToken = client.subscribe(topic!!, qos)
                         subToken.actionCallback = object : IMqttActionListener {
                             override fun onSuccess(asyncActionToken: IMqttToken) {
@@ -110,7 +119,7 @@ class DashboardFragment : Fragment() {
                                             "Topic: \"$topic\", Message: \"$message\""
                                         )
                                         mutableCurrentMqttData.postValue(Pair(System.currentTimeMillis(), message.toString().toFloat()))
-                                        dashboardViewModel.postText(message.toString())
+                                        dashboardViewModel.postText(message.toString(), true)
                                     }
                                     override fun deliveryComplete(token: IMqttDeliveryToken?) {}
                                 })
@@ -132,19 +141,23 @@ class DashboardFragment : Fragment() {
                     Log.e(ContentValues.TAG, exception.toString())
                     if(IllegalArgumentException::class.java.isInstance(exception)) {
                         Toast.makeText(requireContext(), mContext.getString(R.string.mqtt_host_not_selected), Toast.LENGTH_LONG).show()
+                        dashboardViewModel.postText(getString(R.string.no_connection), false)
                     } else Toast.makeText(requireContext(), exception.message, Toast.LENGTH_LONG).show()
+                    dashboardViewModel.postText(getString(R.string.no_connection), false)
                 }
             }
         } catch (e: MqttException) {
             e.printStackTrace()
             Toast.makeText(requireContext(), e.message, Toast.LENGTH_LONG).show()
+            dashboardViewModel.postText(getString(R.string.no_connection), false)
         }
-        return root
     }
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mContext = context
+
+    override fun onStop() {
+        super.onStop()
+        client.disconnect()
     }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

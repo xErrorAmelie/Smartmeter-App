@@ -9,7 +9,11 @@ class DashboardViewModel : ViewModel() {
     private val _text = MutableLiveData<String>()
     val text: LiveData<String> = _text
 
-    fun postText(currentpower: String){
-        _text.value = "$currentpower Watt"
+    fun postText(message: String, nostatus: Boolean){
+        if(nostatus){
+            _text.value = "$message Watt"
+        }else{
+            _text.value = message
+        }
     }
 }
