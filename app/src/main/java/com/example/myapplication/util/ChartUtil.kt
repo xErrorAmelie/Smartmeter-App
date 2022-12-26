@@ -16,6 +16,7 @@ object ChartUtil {
         dataSet.valueTextColor = themeColor.data
         dataSet.barBorderColor = primaryColor.data
         dataSet.valueTextSize = 10F
+        dataSet.setDrawValues(false)
         chart.xAxis.textColor = themeColor.data
         chart.legend.textColor = themeColor.data
         chart.axisLeft.textColor = themeColor.data
